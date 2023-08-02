@@ -22,7 +22,6 @@ void USInteractionComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	
 }
 
 // Called every frame
@@ -45,10 +44,10 @@ void USInteractionComponent::PrimaryIntetract()
 
     FVector End = EyeLocation + (EyeRotation.Vector() * 1000); // vector to know where we are pointing and then extending 1000 cm, so a meter
 
-    //FHitResult Hit;
+    // FHitResult Hit;
     // Raycast that hits the first thing it comes into contact with
-    //bool bBlockingHit = GetWorld()->LineTraceSingleByObjectType(Hit, EyeLocation, End, ObjectQueryParams);
-    
+    // bool bBlockingHit = GetWorld()->LineTraceSingleByObjectType(Hit, EyeLocation, End, ObjectQueryParams);
+
     TArray<FHitResult> Hits;
     FCollisionShape Shape;
     float Radius = 30.0f;
@@ -63,6 +62,7 @@ void USInteractionComponent::PrimaryIntetract()
         AActor* HitActor = Hit.GetActor();
         if (HitActor)
         {
+            DrawDebugSphere(GetWorld(), Hit.ImpactPoint, Radius, 32, LineColor, false, 5.0f, 0, 2.0f);
             // Note to self:
             // Here, we use the refraction system of Unreal to reference the interface. We use UInterface because that is the reference UNreal compiler uses to then mirror the interface
             // Once we know the interface is there and exists, we can use the public mirrored interface class: IInterface to call the interface methods
@@ -73,8 +73,6 @@ void USInteractionComponent::PrimaryIntetract()
                 break; // We found the object we were looking for
             }
         }
-
-        DrawDebugSphere(GetWorld(), Hit.ImpactPoint, Radius, 32, LineColor, false, 5.0f);
     }
 
     // Leave this out if using LineTrace
