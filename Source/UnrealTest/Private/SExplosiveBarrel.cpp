@@ -4,6 +4,7 @@
 #include "SExplosiveBarrel.h"
 #include "Components/StaticMeshComponent.h"
 #include <PhysicsEngine/RadialForceComponent.h>
+#include <DrawDebugHelpers.h>
 
 // Sets default values
 ASExplosiveBarrel::ASExplosiveBarrel()
@@ -48,11 +49,12 @@ void ASExplosiveBarrel::OnActorHit(UPrimitiveComponent* HitComponent, AActor* Ot
 {
     RadialForceComp->FireImpulse();
 
+    // Text Macro converts from String to the format Unreal expects, as well as supporting longer character buffers
     UE_LOG(LogTemp, Log, TEXT("OnActorHit in Explosive Barrel"));
 
     // %s = string
     // %f = float
-    // logs: "OtherActor: MyActor_1, at gametime: 124.4" 
+    // logs: "OtherActor: MyActor_1, at game time: 124.4" 
     UE_LOG(LogTemp, Warning, TEXT("OtherActor: %s, at game time: %f"), *GetNameSafe(OtherActor), GetWorld()->TimeSeconds);
 
     FString CombinedString = FString::Printf(TEXT("Hit at location: %s"), *Hit.ImpactPoint.ToString());
@@ -61,20 +63,6 @@ void ASExplosiveBarrel::OnActorHit(UPrimitiveComponent* HitComponent, AActor* Ot
     // Detailed info on logging in ue4
     // https://nerivec.github.io/old-ue4-wiki/pages/logs-printing-messages-to-yourself-during-runtime.html
 
-    OtherActor->Destroy();
-    Destroy();
+    //OtherActor->Destroy();
+    //Destroy();
 }
-
-// Called when the game starts or when spawned
-void ASExplosiveBarrel::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-// Called every frame
-void ASExplosiveBarrel::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
-

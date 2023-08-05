@@ -7,6 +7,7 @@
 #include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "SInteractionComponent.h"
+#include "SAttributeComponent.h"
 
 // Sets default values
 ASCharacter::ASCharacter()
@@ -14,14 +15,16 @@ ASCharacter::ASCharacter()
     // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
     PrimaryActorTick.bCanEverTick = true;
 
-    SpringArmComp = CreateDefaultSubobject<USpringArmComponent>("SpringArmComponent");
+    SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
     SpringArmComp->bUsePawnControlRotation = true;
     SpringArmComp->SetupAttachment(RootComponent);
 
-    CameraComp = CreateDefaultSubobject<UCameraComponent>("CameraComp");
+    CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
     CameraComp->SetupAttachment(SpringArmComp);
 
     InteractionComp = CreateDefaultSubobject<USInteractionComponent>(TEXT("InteractionComp"));
+
+    AttributeComp = CreateDefaultSubobject<USAttributeComponent>(TEXT("AttributesComp"));
 
     // This rotates the model to the input
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -113,16 +116,23 @@ void ASCharacter::PrimaryAttack()
 
 void ASCharacter::PrimaryAttack_TimeElapsed()
 {
-    FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+    // Ensure only triggers once after compilation
+    // ensureAlways triggers every time it happens
+    // check stops the engine and dead locks it
+    // ensure does not ship with the build
+    if (ensure(ProjectileClass))
+    {
+        FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
 
-    // Transform Matrix
-    FTransform SpawnTM = FTransform(GetControlRotation(), HandLocation);
+        // Transform Matrix
+        FTransform SpawnTM = FTransform(GetControlRotation(), HandLocation);
 
-    FActorSpawnParameters SpawnParams;
-    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-    SpawnParams.Instigator = this;
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+        SpawnParams.Instigator = this;
 
-    GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+        GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+    }
 }
 
 void ASCharacter::PrimaryInteract()
