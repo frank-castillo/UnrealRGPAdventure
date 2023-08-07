@@ -19,7 +19,7 @@ ASExplosiveBarrel::ASExplosiveBarrel()
     // Enabling Simulate physics automatically changes the Profile to PhysicsActor in Blueprint, in C++ we need to change this manually.
     //StaticMeshComp->SetCollisionProfileName(UCollisionProfile::PhysicsActor_ProfileName);
     
-    StaticMeshComp->SetCollisionProfileName("ExplosiveBarrel");
+    //StaticMeshComp->SetCollisionProfileName("ExplosiveBarrel");
 
     RootComponent = StaticMeshComp;
 

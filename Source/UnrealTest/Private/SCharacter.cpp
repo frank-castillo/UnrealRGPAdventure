@@ -31,13 +31,15 @@ ASCharacter::ASCharacter()
     GetCharacterMovement()->MaxJumpApexAttemptsPerSimulation = 1;
 
     bUseControllerRotationYaw = false;
+
+    AttackAnimDelay = 0.2f;
 }
 
-// Called when the game starts or when spawned
-void ASCharacter::BeginPlay()
+void ASCharacter::PostInitializeComponents()
 {
-    Super::BeginPlay();
+    Super::PostInitializeComponents();
 
+    AttributeComp->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
 }
 
 // Called every frame
@@ -75,6 +77,8 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
     PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 
     PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
+    PlayerInputComponent->BindAction("BlackHoleAbility", IE_Pressed, this, &ASCharacter::BlackHoleAbility);
+    PlayerInputComponent->BindAction("DashAbility", IE_Pressed, this, &ASCharacter::DashAbility);
     PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ASCharacter::PrimaryInteract);
     PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ASCharacter::Jump);
 }
@@ -99,17 +103,17 @@ void ASCharacter::MoveRight(float Value)
     // Y = Right
     // Z = Up
 
-    FVector RightVEctor = FRotationMatrix(ControlRot).GetScaledAxis(EAxis::Y);
+    FVector RightVector = FRotationMatrix(ControlRot).GetScaledAxis(EAxis::Y);
 
     // Function in character -> goes to character movement component
-    AddMovementInput(RightVEctor, Value);
+    AddMovementInput(RightVector, Value);
 }
 
 void ASCharacter::PrimaryAttack()
 {
     PlayAnimMontage(AttackAnim);
 
-    GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, 0.2f);
+    GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, AttackAnimDelay);
 
     //GetWorldTimerManager().ClearTimer(TimerHandle_PrimaryAttack);
 }
@@ -120,19 +124,45 @@ void ASCharacter::PrimaryAttack_TimeElapsed()
     // ensureAlways triggers every time it happens
     // check stops the engine and dead locks it
     // ensure does not ship with the build
-    if (ensure(ProjectileClass))
-    {
-        FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+    //if (ensure(ProjectileClass))
+    //{
+    //    FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
 
-        // Transform Matrix
-        FTransform SpawnTM = FTransform(GetControlRotation(), HandLocation);
+    //    // Transform Matrix
+    //    FTransform SpawnTM = FTransform(GetControlRotation(), HandLocation);
 
-        FActorSpawnParameters SpawnParams;
-        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-        SpawnParams.Instigator = this;
+    //    FActorSpawnParameters SpawnParams;
+    //    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    //    SpawnParams.Instigator = this;
 
-        GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
-    }
+    //    GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+    //}
+    SpawnProjectile(ProjectileClass);
+
+}
+
+void ASCharacter::DashAbility()
+{
+    PlayAnimMontage(AttackAnim);
+
+    GetWorldTimerManager().SetTimer(TimerHandle_Dash, this, &ASCharacter::DashAbility_TimeElapsed, AttackAnimDelay);
+}
+
+void ASCharacter::DashAbility_TimeElapsed()
+{
+    SpawnProjectile(ProjectileDashClass);
+}
+
+void ASCharacter::BlackHoleAbility()
+{
+    PlayAnimMontage(AttackAnim);
+
+    GetWorldTimerManager().SetTimer(TimerHandle_BlackHoleAttack, this, &ASCharacter::BlackHoleAbility_TimeElapsed, AttackAnimDelay);
+}
+
+void ASCharacter::BlackHoleAbility_TimeElapsed()
+{
+    SpawnProjectile(ProjectileBlackHoleClass);
 }
 
 void ASCharacter::PrimaryInteract()
@@ -140,5 +170,67 @@ void ASCharacter::PrimaryInteract()
     if (InteractionComp)
     {
         InteractionComp->PrimaryIntetract();
+    }
+}
+
+void ASCharacter::SpawnProjectile(TSubclassOf<AActor> ClassToSpawn)
+{
+    // Always check to make sure we are passing the right class and the argument is not null
+    if (ensureAlways(ClassToSpawn))
+    {
+        // Hash string method to find the socket name
+        FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+        SpawnParams.Instigator = this;
+
+        // Debug
+        FCollisionShape Shape;
+        Shape.SetSphere(20.0f);
+
+        // Ignore Player
+        FCollisionQueryParams CollisionParams;
+        CollisionParams.AddIgnoredActor(this);
+
+        // Set up collision layers
+        FCollisionObjectQueryParams CollisionObjectParams;
+        CollisionObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+        CollisionObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
+        CollisionObjectParams.AddObjectTypesToQuery(ECC_Pawn);
+
+        // Begin the ray trace to line up projectile with crosshair, regardless if avatar is left or right side oriented
+        // First get camera position
+        FVector TraceStart = CameraComp->GetComponentLocation();
+
+        // Then set the end point of the trace collision check. This is pointing towards the look at of the character.
+        FVector TraceEnd = CameraComp->GetComponentLocation() + (GetControlRotation().Vector() * 5000);
+
+        // Collision Logic - Check returns true if it collided with something
+        FHitResult Hit;
+        // Find new direction/rotation from Hand pointing direction to the impact point in the world
+        FRotator ProjectionRotation;
+        if (GetWorld()->SweepSingleByObjectType(Hit, TraceStart, TraceEnd, FQuat::Identity, CollisionObjectParams, Shape, CollisionParams))
+        {
+            // Adjust location to end up at crosshair look-at
+            ProjectionRotation = FRotationMatrix::MakeFromX(Hit.ImpactPoint - HandLocation).Rotator();
+        }
+        else
+        {
+            ProjectionRotation = FRotationMatrix::MakeFromX(TraceEnd - HandLocation).Rotator();
+        }
+
+        // Final Transform Matrix based on new X-aligned rotation and the hand position as origin
+        FTransform SpawnTM = FTransform(ProjectionRotation, HandLocation);
+        GetWorld()->SpawnActor<AActor>(ClassToSpawn, SpawnTM, SpawnParams);
+    }
+}
+
+void ASCharacter::OnHealthChanged(AActor* InstigatorActor, USAttributeComponent* OwningComp, float NewHealth, float Delta)
+{
+    if (NewHealth <= 0.0f && Delta < 0.0f)
+    {
+        APlayerController* PC = Cast<APlayerController>(GetController());
+        DisableInput(PC);
     }
 }
