@@ -7,21 +7,33 @@
 #include "SGameplayInterface.h"
 #include "SPowerupActor.generated.h"
 
+class USphereComponent;
+
 UCLASS()
 class UNREALTEST_API ASPowerupActor : public AActor, public ISGameplayInterface
 {
 	GENERATED_BODY()
-	
-public:	
+
+protected:
+
+	UPROPERTY(EditAnywhere, Category = "Powerup")
+	float RespawnTime;
+
+	UFUNCTION()
+	void ShowPowerup();
+
+	void HideAndCooldownPowerup();
+
+	void SetPowerupState(bool bNewIsActive);
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	USphereComponent* SphereComp;
+
+public:
+
 	// Sets default values for this actor's properties
 	ASPowerupActor();
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
+	void Interact_Implementation(APawn* InstigatorPawn) override;
 };

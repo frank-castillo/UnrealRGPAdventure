@@ -9,6 +9,9 @@
 class USphereComponent;
 class UProjectileMovementComponent;
 class UParticleSystemComponent;
+class UAudioComponent;
+class USoundCue;
+class UCameraShakeBase;
 
 // Abstract marks the class as incomplete, keeping this out of certain dropdown windows
 UCLASS(ABSTRACT)
@@ -22,6 +25,15 @@ public:
 
 protected:
 
+    UPROPERTY(EditDefaultsOnly, Category = "Effects|Shake")
+	TSubclassOf<UCameraShakeBase> ImpactShake;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Effects|Shake")
+	float ImpactShakeInnerRadius;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Effects|Shake")
+	float ImpactShakeOuterRadius;
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     UProjectileMovementComponent* MoveComp;
 
@@ -33,6 +45,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Effects")
     UParticleSystem* ImpactVFX;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Effects")
+	USoundCue* ImpactSound;
+
+    UPROPERTY(VisibleAnywhere, Category = "Components")
+	UAudioComponent* AudioComp;
 
     // Virtual so we can override on child classes
     UFUNCTION()

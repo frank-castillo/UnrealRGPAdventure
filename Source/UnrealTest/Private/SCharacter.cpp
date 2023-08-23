@@ -8,6 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "SInteractionComponent.h"
 #include "SAttributeComponent.h"
+#include <Kismet/GameplayStatics.h>
 
 // Sets default values
 ASCharacter::ASCharacter()
@@ -33,6 +34,8 @@ ASCharacter::ASCharacter()
     bUseControllerRotationYaw = false;
 
     AttackAnimDelay = 0.2f;
+    TimeToHitParamName = "TimeToHit";
+    HandSocketName = "Muzzle_01";
 }
 
 void ASCharacter::PostInitializeComponents()
@@ -111,7 +114,7 @@ void ASCharacter::MoveRight(float Value)
 
 void ASCharacter::PrimaryAttack()
 {
-    PlayAnimMontage(AttackAnim);
+    StartAttackEffects();
 
     GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, AttackAnimDelay);
 
@@ -143,7 +146,7 @@ void ASCharacter::PrimaryAttack_TimeElapsed()
 
 void ASCharacter::DashAbility()
 {
-    PlayAnimMontage(AttackAnim);
+    StartAttackEffects();
 
     GetWorldTimerManager().SetTimer(TimerHandle_Dash, this, &ASCharacter::DashAbility_TimeElapsed, AttackAnimDelay);
 }
@@ -155,7 +158,7 @@ void ASCharacter::DashAbility_TimeElapsed()
 
 void ASCharacter::BlackHoleAbility()
 {
-    PlayAnimMontage(AttackAnim);
+    StartAttackEffects();
 
     GetWorldTimerManager().SetTimer(TimerHandle_BlackHoleAttack, this, &ASCharacter::BlackHoleAbility_TimeElapsed, AttackAnimDelay);
 }
@@ -173,13 +176,20 @@ void ASCharacter::PrimaryInteract()
     }
 }
 
+void ASCharacter::StartAttackEffects()
+{
+    PlayAnimMontage(AttackAnim);
+
+    UGameplayStatics::SpawnEmitterAttached(CastingEffect, GetMesh(), HandSocketName, FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::SnapToTarget);
+}
+
 void ASCharacter::SpawnProjectile(TSubclassOf<AActor> ClassToSpawn)
 {
     // Always check to make sure we are passing the right class and the argument is not null
     if (ensureAlways(ClassToSpawn))
     {
         // Hash string method to find the socket name
-        FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+        FVector HandLocation = GetMesh()->GetSocketLocation(HandSocketName);
 
         FActorSpawnParameters SpawnParams;
         SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -228,6 +238,11 @@ void ASCharacter::SpawnProjectile(TSubclassOf<AActor> ClassToSpawn)
 
 void ASCharacter::OnHealthChanged(AActor* InstigatorActor, USAttributeComponent* OwningComp, float NewHealth, float Delta)
 {
+    if (Delta < 0.0f)
+    {
+        GetMesh()->SetScalarParameterValueOnMaterials(TimeToHitParamName, GetWorld()->TimeSeconds);
+    }
+
     if (NewHealth <= 0.0f && Delta < 0.0f)
     {
         APlayerController* PC = Cast<APlayerController>(GetController());

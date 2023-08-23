@@ -11,6 +11,7 @@ class USpringArmComponent;
 class USInteractionComponent;
 class USAttributeComponent;
 class UAnimMontage;
+class UParticleSystem;
 
 UCLASS()
 class UNREALTEST_API ASCharacter : public ACharacter
@@ -18,6 +19,14 @@ class UNREALTEST_API ASCharacter : public ACharacter
     GENERATED_BODY()
 
 protected:
+
+    /* VisibleAnywhere = read-only, still useful to view in-editor and enforce a convention. */
+	UPROPERTY(VisibleAnywhere, Category = "Effects")
+	FName TimeToHitParamName;
+
+	UPROPERTY(VisibleAnywhere, Category = "Effects")
+	FName HandSocketName;
+
     UPROPERTY(EditAnywhere, Category = "Attack")
     TSubclassOf<AActor> ProjectileClass;
 
@@ -33,23 +42,22 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Attack")
     float AttackAnimDelay = 0.0f;
 
+    /* Particle System played during attack animation */
+	UPROPERTY(EditAnywhere, Category = "Attack")
+	UParticleSystem* CastingEffect;
+
     FTimerHandle TimerHandle_PrimaryAttack;
     FTimerHandle TimerHandle_BlackHoleAttack;
     FTimerHandle TimerHandle_Dash;
 
-public:
-    // Sets default values for this character's properties
-    ASCharacter();
-
-protected:
     UPROPERTY(VisibleAnywhere)
-        USpringArmComponent* SpringArmComp;
+    USpringArmComponent* SpringArmComp;
 
     UPROPERTY(VisibleAnywhere)
-        UCameraComponent* CameraComp;
+    UCameraComponent* CameraComp;
 
     UPROPERTY(VisibleAnywhere)
-        USInteractionComponent* InteractionComp;
+    USInteractionComponent* InteractionComp;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     USAttributeComponent* AttributeComp;
@@ -72,6 +80,8 @@ protected:
 
     void PrimaryInteract();
 
+    void StartAttackEffects();
+
     void SpawnProjectile(TSubclassOf<AActor> ClassToSpawn);
 
     UFUNCTION()
@@ -85,4 +95,7 @@ public:
 
     // Called to bind functionality to input
     virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+    // Sets default values for this character's properties
+    ASCharacter();
 };

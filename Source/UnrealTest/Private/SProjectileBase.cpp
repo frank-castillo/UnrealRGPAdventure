@@ -6,6 +6,9 @@
 #include <GameFramework/ProjectileMovementComponent.h>
 #include <Particles/ParticleSystemComponent.h>
 #include <Kismet/GameplayStatics.h>
+#include "Components/AudioComponent.h"
+#include "Sound/SoundCue.h"
+#include "Camera/CameraShakeBase.h"
 
 // Sets default values
 ASProjectileBase::ASProjectileBase()
@@ -22,11 +25,17 @@ ASProjectileBase::ASProjectileBase()
     EffectComp = CreateDefaultSubobject<UParticleSystemComponent>("EffectComp");
     EffectComp->SetupAttachment(RootComponent);
 
+    AudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComp"));
+    AudioComp->SetupAttachment(RootComponent);
+
     MoveComp = CreateDefaultSubobject<UProjectileMovementComponent>("ProjectileMoveComp");
     MoveComp->bRotationFollowsVelocity = true;
     MoveComp->bInitialVelocityInLocalSpace = true;
     MoveComp->ProjectileGravityScale = 0.0;
     MoveComp->InitialSpeed = 8000.0f;
+
+    ImpactShakeInnerRadius = 250.0f;
+    ImpactShakeOuterRadius = 2500.0f;
 }
 
 void ASProjectileBase::OnActorHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -44,11 +53,13 @@ void ASProjectileBase::Explode_Implementation()
     if (ensure(!IsPendingKill()))
     {
         UGameplayStatics::SpawnEmitterAtLocation(this, ImpactVFX, GetActorLocation(), GetActorRotation());
+        UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
+        UGameplayStatics::PlayWorldCameraShake(this, ImpactShake, GetActorLocation(), ImpactShakeInnerRadius, ImpactShakeOuterRadius);
 
-        EffectComp->DeactivateSystem();
+        //EffectComp->DeactivateSystem();
 
-        MoveComp->StopMovementImmediately();
-        SetActorEnableCollision(false);
+        //MoveComp->StopMovementImmediately();
+        //SetActorEnableCollision(false);
 
         Destroy();
     }
@@ -58,5 +69,5 @@ void ASProjectileBase::PostInitializeComponents()
 {
     Super::PostInitializeComponents();
     SphereComp->OnComponentHit.AddDynamic(this, &ASProjectileBase::OnActorHit);
-    SphereComp->IgnoreActorWhenMoving(GetInstigator(), true);
+    //SphereComp->IgnoreActorWhenMoving(GetInstigator(), true);
 }
