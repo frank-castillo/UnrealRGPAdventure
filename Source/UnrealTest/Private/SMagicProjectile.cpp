@@ -25,7 +25,7 @@ void ASMagicProjectile::OnActorOverlap(UPrimitiveComponent* OverlappedComponent,
         if (AttributeComp)
         {
             // Reduce Player Health
-            AttributeComp->ApplyHealthChange(-DamageAmount);
+            AttributeComp->ApplyHealthChange(GetInstigator(), -DamageAmount);
 
             // Only explode when we hit something valid
             Explode();
