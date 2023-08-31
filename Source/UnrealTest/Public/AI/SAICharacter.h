@@ -8,6 +8,8 @@
 
 class UPawnSensingComponent;
 class USAttributeComponent;
+class UUserWidget;
+class USWorldUserWidget;
 
 UCLASS()
 class UNREALTEST_API ASAICharacter : public ACharacter
@@ -26,6 +28,11 @@ protected:
 
     UPROPERTY(VisibleAnywhere, Category = "Effect")
     FName TimeToHitParamName;
+
+    USWorldUserWidget* ActiveHealthBar;
+
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<UUserWidget> HealthBarWidgetClass;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UPawnSensingComponent* PawnSensingComp;

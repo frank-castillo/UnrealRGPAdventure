@@ -38,6 +38,11 @@ ASCharacter::ASCharacter()
     HandSocketName = "Muzzle_01";
 }
 
+void ASCharacter::HealSelf(float Amount)
+{
+    AttributeComp->ApplyHealthChange(this, Amount);
+}
+
 void ASCharacter::PostInitializeComponents()
 {
     Super::PostInitializeComponents();

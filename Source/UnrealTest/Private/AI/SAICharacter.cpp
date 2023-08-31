@@ -8,6 +8,7 @@
 #include <DrawDebugHelpers.h>
 #include "SAttributeComponent.h"
 #include <AIModule/Classes/BrainComponent.h>
+#include "SWorldUserWidget.h"
 
 // Sets default values
 ASAICharacter::ASAICharacter()
@@ -53,6 +54,17 @@ void ASAICharacter::OnHealthChanged(AActor* InstigatorActor, USAttributeComponen
         {
             SetTargetActor(InstigatorActor);
             DrawDebugString(GetWorld(), GetActorLocation(), "I WAS ATTACKED", nullptr, FColor::White, 4.0f, true);
+        }
+
+        if (ActiveHealthBar == nullptr)
+        {
+            ActiveHealthBar = CreateWidget<USWorldUserWidget>(GetWorld(), HealthBarWidgetClass);
+
+            if (ActiveHealthBar)
+            {
+                ActiveHealthBar->AttachedActor = this;
+                ActiveHealthBar->AddToViewport();
+            }
         }
 
         GetMesh()->SetScalarParameterValueOnMaterials(TimeToHitParamName, GetWorld()->TimeSeconds);
