@@ -4,6 +4,7 @@
 #include "SMagicProjectile.h"
 #include "SAttributeComponent.h"
 #include "Components/SphereComponent.h"
+#include "SGameplayFunctionLibrary.h"
 
 // Sets default values
 ASMagicProjectile::ASMagicProjectile()
@@ -20,14 +21,19 @@ void ASMagicProjectile::OnActorOverlap(UPrimitiveComponent* OverlappedComponent,
     {
         // We use StaticClass in order to suffice the argument requirement needed for the Get function
         // We get the component so that we can then access its functions and members
-        USAttributeComponent* AttributeComp = Cast<USAttributeComponent>(OtherActor->GetComponentByClass(USAttributeComponent::StaticClass()));
+        //USAttributeComponent* AttributeComp = Cast<USAttributeComponent>(OtherActor->GetComponentByClass(USAttributeComponent::StaticClass()));
 
-        if (AttributeComp)
+        //if (AttributeComp)
+        //{
+        //    // Reduce Player Health
+        //    AttributeComp->ApplyHealthChange(GetInstigator(), -DamageAmount);
+
+        //    // Only explode when we hit something valid
+        //    Explode();
+        //}
+
+        if (USGameplayFunctionLibrary::ApplyDirectionalDamage(GetInstigator(), OtherActor, DamageAmount, SweepResult))
         {
-            // Reduce Player Health
-            AttributeComp->ApplyHealthChange(GetInstigator(), -DamageAmount);
-
-            // Only explode when we hit something valid
             Explode();
         }
     }

@@ -10,7 +10,7 @@
 
 USBTTask_RangedAttack::USBTTask_RangedAttack()
 {
-    MaxBulletSpread = 8.0f;
+    MaxBulletSpread = 4.0f;
 }
 
 EBTNodeResult::Type USBTTask_RangedAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -26,8 +26,6 @@ EBTNodeResult::Type USBTTask_RangedAttack::ExecuteTask(UBehaviorTreeComponent& O
             return EBTNodeResult::Failed;
         }
 
-        FVector MuzzleLocation = MyPawn->GetMesh()->GetSocketLocation("Muzzle_01");
-
         AActor* TargetActor = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject("TargetActor"));
 
         if (TargetActor == nullptr)
@@ -41,6 +39,7 @@ EBTNodeResult::Type USBTTask_RangedAttack::ExecuteTask(UBehaviorTreeComponent& O
         }
 
         // Get location and subtract muzzle, gives direction pointing at target actor
+        FVector MuzzleLocation = MyPawn->GetMesh()->GetSocketLocation("Muzzle_01");
         FVector Direction = TargetActor->GetActorLocation() - MuzzleLocation;
         FRotator MuzzleRotation = Direction.Rotation();
 

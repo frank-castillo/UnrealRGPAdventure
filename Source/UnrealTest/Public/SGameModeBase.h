@@ -34,18 +34,30 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	float SpawnTimerInterval;
-	
+
+    UPROPERTY(EditDefaultsOnly, Category = "Respawn")
+    float RespawnDelay;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Credits")
+    uint8 AICreditValue;
+
 	UFUNCTION()
 	void SpawnBotTimerElapsed();
 
 	UFUNCTION()
 	void OnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance, EEnvQueryStatus::Type QueryStatus);
 
+    UFUNCTION()
+    void RespawnPlayerElapsed(AController* Controller);
+
 public:
 
 	ASGameModeBase();
 
 	virtual void StartPlay() override;
+
+    // Marked as virtual so we can override in child classes
+    virtual void OnActorKilled(AActor* VictimActor, AActor* Killer);
 
     UFUNCTION(Exec)
     void KillAll();

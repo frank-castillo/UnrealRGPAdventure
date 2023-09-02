@@ -9,10 +9,17 @@
 #include "SAttributeComponent.h"
 #include <EngineUtils.h>
 #include <DrawDebugHelpers.h>
+#include "SCharacter.h"
+#include <Engine/EngineTypes.h>
+#include "SPlayerState.h"
+
+static TAutoConsoleVariable<bool> CVarSpawnBots(TEXT("su.SpawnBots"), true, TEXT("Enable spawning of bots via timer."), ECVF_Cheat);
 
 ASGameModeBase::ASGameModeBase()
 {
     SpawnTimerInterval = 2.0f;
+    RespawnDelay = 2.0f;
+    AICreditValue = 10;
 }
 
 void ASGameModeBase::StartPlay()
@@ -22,6 +29,33 @@ void ASGameModeBase::StartPlay()
     // continuous timer to spawn in more bots
     // Actual amount of bots and whether it is allowed to spawn determined by spawn logic
     GetWorldTimerManager().SetTimer(TimerHandle_SpawnBots, this, &ASGameModeBase::SpawnBotTimerElapsed, SpawnTimerInterval, true);
+}
+
+void ASGameModeBase::OnActorKilled(AActor* VictimActor, AActor* Killer)
+{
+    // Set timer with parameter
+    ASCharacter* Player = Cast<ASCharacter>(VictimActor);
+
+    if (Player)
+    {
+        // We do not store the character because if we reuse the handle, then we will never respawn the player that died as it would get overwritten
+        // Using a local variable solves this as it will get instantiated in memory and live independent per character we have
+        FTimerHandle TimerHandle_RespawnDelay;
+
+        // Pass who we respawn
+        FTimerDelegate Delegate;
+        Delegate.BindUFunction(this, "RespawnPlayerElapsed", Player->GetController());
+
+        GetWorldTimerManager().SetTimer(TimerHandle_RespawnDelay, Delegate, RespawnDelay, false);
+
+        UE_LOG(LogTemp, Log, TEXT("OnActorKilled: Victim: %s, Killer: %s"), *GetNameSafe(VictimActor), *GetNameSafe(Killer));
+    }
+    else if (VictimActor->IsA<ASAICharacter>() && Killer->IsA<ASCharacter>())
+    {
+        Player = Cast<ASCharacter>(Killer);
+        ASPlayerState* PlayerState = Cast<ASPlayerState>(Player->GetController()->PlayerState.Get());
+        PlayerState->GrantCredits(AICreditValue);
+    }
 }
 
 void ASGameModeBase::KillAll()
@@ -40,6 +74,12 @@ void ASGameModeBase::KillAll()
 
 void ASGameModeBase::SpawnBotTimerElapsed()
 {
+    if (!CVarSpawnBots.GetValueOnGameThread())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Bot spawning disabled via cvar 'CVarSpawnBots'."));
+        return;
+    }
+
     int32 NrOfAliveBots = 0;
     for (TActorIterator<ASAICharacter> It(GetWorld()); It; ++It)
     {
@@ -100,5 +140,15 @@ void ASGameModeBase::OnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryIn
         GetWorld()->SpawnActor<AActor>(MinionClass, Locations[0], FRotator::ZeroRotator);
 
         DrawDebugSphere(GetWorld(), Locations[0], 50.0f, 20, FColor::Blue, false, 60.0f);
+    }
+}
+
+void ASGameModeBase::RespawnPlayerElapsed(AController* Controller)
+{
+    if (ensure(Controller))
+    {
+        // Remove control and detach from us -> this ensures a proper clean copy of the character
+        Controller->UnPossess();
+        RestartPlayer(Controller);
     }
 }
