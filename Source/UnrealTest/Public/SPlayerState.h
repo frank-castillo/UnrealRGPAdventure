@@ -25,4 +25,10 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Credits")
     bool GrantCredits(const float NewCredits);
+
+    UFUNCTION(BlueprintCallable, Category = "Credits")
+    bool DeductCredits(const float NewCredits);
+
+    UFUNCTION(BlueprintCallable, Category = "Credits")
+    float GetCredits() const;
 };

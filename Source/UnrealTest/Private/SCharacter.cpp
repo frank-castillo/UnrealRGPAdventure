@@ -9,6 +9,7 @@
 #include "SInteractionComponent.h"
 #include "SAttributeComponent.h"
 #include <Kismet/GameplayStatics.h>
+#include "SActionComponent.h"
 
 // Sets default values
 ASCharacter::ASCharacter()
@@ -27,15 +28,17 @@ ASCharacter::ASCharacter()
 
     AttributeComp = CreateDefaultSubobject<USAttributeComponent>(TEXT("AttributesComp"));
 
+    ActionComp = CreateDefaultSubobject<USActionComponent>(TEXT("ActionComp"));
+
     // This rotates the model to the input
     GetCharacterMovement()->bOrientRotationToMovement = true;
     GetCharacterMovement()->MaxJumpApexAttemptsPerSimulation = 1;
 
     bUseControllerRotationYaw = false;
-
-    AttackAnimDelay = 0.2f;
     TimeToHitParamName = "TimeToHit";
-    HandSocketName = "Muzzle_01";
+
+    //AttackAnimDelay = 0.2f;
+    //HandSocketName = "Muzzle_01";
 }
 
 void ASCharacter::HealSelf(float Amount)
@@ -89,11 +92,15 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
     PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
     PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 
+    // IE -> Input Event
     PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
     PlayerInputComponent->BindAction("BlackHoleAbility", IE_Pressed, this, &ASCharacter::BlackHoleAbility);
     PlayerInputComponent->BindAction("DashAbility", IE_Pressed, this, &ASCharacter::DashAbility);
     PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ASCharacter::PrimaryInteract);
     PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ASCharacter::Jump);
+
+    PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ASCharacter::SprintStart);
+    PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ASCharacter::SprintStop);
 }
 
 void ASCharacter::MoveForward(float Value)
@@ -122,60 +129,39 @@ void ASCharacter::MoveRight(float Value)
     AddMovementInput(RightVector, Value);
 }
 
-void ASCharacter::PrimaryAttack()
+void ASCharacter::SprintStart()
 {
-    StartAttackEffects();
-
-    GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, AttackAnimDelay);
-
-    //GetWorldTimerManager().ClearTimer(TimerHandle_PrimaryAttack);
+    ActionComp->StartActionByName(this, "Sprint");
 }
 
-void ASCharacter::PrimaryAttack_TimeElapsed()
+void ASCharacter::SprintStop()
 {
-    // Ensure only triggers once after compilation
-    // ensureAlways triggers every time it happens
-    // check stops the engine and dead locks it
-    // ensure does not ship with the build
-    //if (ensure(ProjectileClass))
-    //{
-    //    FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+    ActionComp->StopActionByName(this, "Sprint");
+}
 
-    //    // Transform Matrix
-    //    FTransform SpawnTM = FTransform(GetControlRotation(), HandLocation);
+void ASCharacter::PrimaryAttack()
+{
+    // Old call methods before SAction_ProjectileAttack
+    //StartAttackEffects();
+    //GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, AttackAnimDelay);
+    ////GetWorldTimerManager().ClearTimer(TimerHandle_PrimaryAttack);
 
-    //    FActorSpawnParameters SpawnParams;
-    //    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-    //    SpawnParams.Instigator = this;
-
-    //    GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
-    //}
-    SpawnProjectile(ProjectileClass);
-
+    // Action Code -> Followed up by BP child class implementation
+    ActionComp->StartActionByName(this, "PrimaryAttack");
 }
 
 void ASCharacter::DashAbility()
 {
-    StartAttackEffects();
-
-    GetWorldTimerManager().SetTimer(TimerHandle_Dash, this, &ASCharacter::DashAbility_TimeElapsed, AttackAnimDelay);
-}
-
-void ASCharacter::DashAbility_TimeElapsed()
-{
-    SpawnProjectile(ProjectileDashClass);
+    /*StartAttackEffects();
+    GetWorldTimerManager().SetTimer(TimerHandle_Dash, this, &ASCharacter::DashAbility_TimeElapsed, AttackAnimDelay);*/
+    ActionComp->StartActionByName(this, "DashAbility");
 }
 
 void ASCharacter::BlackHoleAbility()
 {
-    StartAttackEffects();
-
-    GetWorldTimerManager().SetTimer(TimerHandle_BlackHoleAttack, this, &ASCharacter::BlackHoleAbility_TimeElapsed, AttackAnimDelay);
-}
-
-void ASCharacter::BlackHoleAbility_TimeElapsed()
-{
-    SpawnProjectile(ProjectileBlackHoleClass);
+    /*StartAttackEffects();
+    GetWorldTimerManager().SetTimer(TimerHandle_BlackHoleAttack, this, &ASCharacter::BlackHoleAbility_TimeElapsed, AttackAnimDelay);*/
+    ActionComp->StartActionByName(this, "BlackHoleAbility");
 }
 
 void ASCharacter::PrimaryInteract()
@@ -183,66 +169,6 @@ void ASCharacter::PrimaryInteract()
     if (InteractionComp)
     {
         InteractionComp->PrimaryIntetract();
-    }
-}
-
-void ASCharacter::StartAttackEffects()
-{
-    PlayAnimMontage(AttackAnim);
-
-    UGameplayStatics::SpawnEmitterAttached(CastingEffect, GetMesh(), HandSocketName, FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::SnapToTarget);
-}
-
-void ASCharacter::SpawnProjectile(TSubclassOf<AActor> ClassToSpawn)
-{
-    // Always check to make sure we are passing the right class and the argument is not null
-    if (ensureAlways(ClassToSpawn))
-    {
-        // Hash string method to find the socket name
-        FVector HandLocation = GetMesh()->GetSocketLocation(HandSocketName);
-
-        FActorSpawnParameters SpawnParams;
-        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-        SpawnParams.Instigator = this;
-
-        // Debug
-        FCollisionShape Shape;
-        Shape.SetSphere(20.0f);
-
-        // Ignore Player
-        FCollisionQueryParams CollisionParams;
-        CollisionParams.AddIgnoredActor(this);
-
-        // Set up collision layers
-        FCollisionObjectQueryParams CollisionObjectParams;
-        CollisionObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-        CollisionObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
-        CollisionObjectParams.AddObjectTypesToQuery(ECC_Pawn);
-
-        // Begin the ray trace to line up projectile with crosshair, regardless if avatar is left or right side oriented
-        // First get camera position
-        FVector TraceStart = CameraComp->GetComponentLocation();
-
-        // Then set the end point of the trace collision check. This is pointing towards the look at of the character.
-        FVector TraceEnd = CameraComp->GetComponentLocation() + (GetControlRotation().Vector() * 5000);
-
-        // Collision Logic - Check returns true if it collided with something
-        FHitResult Hit;
-        // Find new direction/rotation from Hand pointing direction to the impact point in the world
-        FRotator ProjectionRotation;
-        if (GetWorld()->SweepSingleByObjectType(Hit, TraceStart, TraceEnd, FQuat::Identity, CollisionObjectParams, Shape, CollisionParams))
-        {
-            // Adjust location to end up at crosshair look-at
-            ProjectionRotation = FRotationMatrix::MakeFromX(Hit.ImpactPoint - HandLocation).Rotator();
-        }
-        else
-        {
-            ProjectionRotation = FRotationMatrix::MakeFromX(TraceEnd - HandLocation).Rotator();
-        }
-
-        // Final Transform Matrix based on new X-aligned rotation and the hand position as origin
-        FTransform SpawnTM = FTransform(ProjectionRotation, HandLocation);
-        GetWorld()->SpawnActor<AActor>(ClassToSpawn, SpawnTM, SpawnParams);
     }
 }
 
@@ -259,3 +185,98 @@ void ASCharacter::OnHealthChanged(AActor* InstigatorActor, USAttributeComponent*
         DisableInput(PC);
     }
 }
+
+// Old code used for before actions were implemented -> Kept as personal reference
+
+//void ASCharacter::PrimaryAttack_TimeElapsed()
+//{
+//    // Ensure only triggers once after compilation
+//    // ensureAlways triggers every time it happens
+//    // check stops the engine and dead locks it
+//    // ensure does not ship with the build
+//    //if (ensure(ProjectileClass))
+//    //{
+//    //    FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+//
+//    //    // Transform Matrix
+//    //    FTransform SpawnTM = FTransform(GetControlRotation(), HandLocation);
+//
+//    //    FActorSpawnParameters SpawnParams;
+//    //    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+//    //    SpawnParams.Instigator = this;
+//
+//    //    GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+//    //}
+//    SpawnProjectile(ProjectileClass);
+//
+//}
+
+//void ASCharacter::DashAbility_TimeElapsed()
+//{
+//    SpawnProjectile(ProjectileDashClass);
+//}
+
+//void ASCharacter::BlackHoleAbility_TimeElapsed()
+//{
+//    SpawnProjectile(ProjectileBlackHoleClass);
+//}
+
+//void ASCharacter::StartAttackEffects()
+//{
+//    PlayAnimMontage(AttackAnim);
+//
+//    UGameplayStatics::SpawnEmitterAttached(CastingEffect, GetMesh(), HandSocketName, FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::SnapToTarget);
+//}
+
+//void ASCharacter::SpawnProjectile(TSubclassOf<AActor> ClassToSpawn)
+//{
+//    // Always check to make sure we are passing the right class and the argument is not null
+//    if (ensureAlways(ClassToSpawn))
+//    {
+//        // Hash string method to find the socket name
+//        FVector HandLocation = GetMesh()->GetSocketLocation(HandSocketName);
+//
+//        FActorSpawnParameters SpawnParams;
+//        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+//        SpawnParams.Instigator = this;
+//
+//        // Debug
+//        FCollisionShape Shape;
+//        Shape.SetSphere(20.0f);
+//
+//        // Ignore Player
+//        FCollisionQueryParams CollisionParams;
+//        CollisionParams.AddIgnoredActor(this);
+//
+//        // Set up collision layers
+//        FCollisionObjectQueryParams CollisionObjectParams;
+//        CollisionObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+//        CollisionObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
+//        CollisionObjectParams.AddObjectTypesToQuery(ECC_Pawn);
+//
+//        // Begin the ray trace to line up projectile with crosshair, regardless if avatar is left or right side oriented
+//        // First get camera position
+//        FVector TraceStart = CameraComp->GetComponentLocation();
+//
+//        // Then set the end point of the trace collision check. This is pointing towards the look at of the character.
+//        FVector TraceEnd = CameraComp->GetComponentLocation() + (GetControlRotation().Vector() * 5000);
+//
+//        // Collision Logic - Check returns true if it collided with something
+//        FHitResult Hit;
+//        // Find new direction/rotation from Hand pointing direction to the impact point in the world
+//        FRotator ProjectionRotation;
+//        if (GetWorld()->SweepSingleByObjectType(Hit, TraceStart, TraceEnd, FQuat::Identity, CollisionObjectParams, Shape, CollisionParams))
+//        {
+//            // Adjust location to end up at crosshair look-at
+//            ProjectionRotation = FRotationMatrix::MakeFromX(Hit.ImpactPoint - HandLocation).Rotator();
+//        }
+//        else
+//        {
+//            ProjectionRotation = FRotationMatrix::MakeFromX(TraceEnd - HandLocation).Rotator();
+//        }
+//
+//        // Final Transform Matrix based on new X-aligned rotation and the hand position as origin
+//        FTransform SpawnTM = FTransform(ProjectionRotation, HandLocation);
+//        GetWorld()->SpawnActor<AActor>(ClassToSpawn, SpawnTM, SpawnParams);
+//    }
+//}

@@ -22,3 +22,28 @@ bool ASPlayerState::GrantCredits(const float NewCredits)
 
     return false;
 }
+
+bool ASPlayerState::DeductCredits(const float DeductedCredits)
+{
+    if (Credits == 0.0f)
+    {
+        return true;
+    }
+
+    const float CurrentCredits = Credits;
+    Credits = FMath::Clamp(Credits -= DeductedCredits, 0.0f, CurrentCredits);
+
+    if (Credits < CurrentCredits)
+    {
+        return true;
+    }
+
+    UE_LOG(LogTemp, Warning, TEXT("Error deducting credits. Please check this issue."));
+
+    return false;
+}
+
+float ASPlayerState::GetCredits() const
+{
+    return Credits;
+}

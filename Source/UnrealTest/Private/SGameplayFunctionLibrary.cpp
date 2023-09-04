@@ -27,7 +27,11 @@ bool USGameplayFunctionLibrary::ApplyDirectionalDamage(AActor* DamageCauser, AAc
         {
             // Impulse -> Direction and Magnitude
             // Normal is the direction back to who shot
-            HitComp->AddImpulseAtLocation(-HitResult.ImpactNormal * 300000.0f, HitResult.ImpactPoint, HitResult.BoneName);
+            // To get the origin of where we are shooting figure the trace start, trace end and turn it into a vector
+            FVector Direction = HitResult.TraceEnd - HitResult.TraceStart; // Direction is Target - Origin
+            Direction.Normalize(); // Properly turn to direction vector
+
+            HitComp->AddImpulseAtLocation(Direction * 300000.0f, HitResult.ImpactPoint, HitResult.BoneName);
         }
 
         return true;
