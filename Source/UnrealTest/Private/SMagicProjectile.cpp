@@ -5,6 +5,8 @@
 #include "SAttributeComponent.h"
 #include "Components/SphereComponent.h"
 #include "SGameplayFunctionLibrary.h"
+#include "SActionComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 
 // Sets default values
 ASMagicProjectile::ASMagicProjectile()
@@ -31,6 +33,20 @@ void ASMagicProjectile::OnActorOverlap(UPrimitiveComponent* OverlappedComponent,
         //    // Only explode when we hit something valid
         //    Explode();
         //}
+
+        // By marking static, we will avoid calling the Request method every time we reach this point
+        //static FGameplayTag Tag = FGameplayTag::RequestGameplayTag("Status.Parrying");
+
+        USActionComponent* ActionComp = Cast<USActionComponent>(OtherActor->GetComponentByClass(USActionComponent::StaticClass()));
+
+        if (ActionComp && ActionComp->ActiveGameplayTags.HasTag(ParryTag))
+        {
+            MoveComp->Velocity = -MoveComp->Velocity;
+
+            // Take ownership when parrying
+            SetInstigator(Cast<APawn>(OtherActor));
+            return; // We return cause we do not want to trigger the other if statement
+        }
 
         if (USGameplayFunctionLibrary::ApplyDirectionalDamage(GetInstigator(), OtherActor, DamageAmount, SweepResult))
         {

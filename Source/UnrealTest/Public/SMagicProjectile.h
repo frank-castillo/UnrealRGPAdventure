@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "SProjectileBase.h"
+#include <GameplayTagContainer.h>
 #include "SMagicProjectile.generated.h"
 
 UCLASS()
@@ -17,9 +18,6 @@ public:
 
 protected:
 
-    UPROPERTY(EditDefaultsOnly, Category = "Damage")
-    float DamageAmount;
-
     // We dive into the implementation of the original component overlap
     // We copy the arguments the function requires
     // We add UFUNCTION! So we can properly bind the function
@@ -27,4 +25,10 @@ protected:
     void OnActorOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
     void PostInitializeComponents() override;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Damage")
+    float DamageAmount;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Damage")
+    FGameplayTag ParryTag;
 };

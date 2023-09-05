@@ -11,14 +11,15 @@
 #include "SWorldUserWidget.h"
 #include "Components/CapsuleComponent.h"
 #include <GameFramework/CharacterMovementComponent.h>
+#include "SActionComponent.h"
 
 
 // Sets default values
 ASAICharacter::ASAICharacter()
 {
     PawnSensingComp = CreateDefaultSubobject<UPawnSensingComponent>(TEXT("PawnSensingComp"));
-
     AttributeComp = CreateDefaultSubobject<USAttributeComponent>(TEXT("AttributesComp"));
+    ActionComp = CreateDefaultSubobject<USActionComponent>(TEXT("ActionComp"));
 
     TimeToHitParamName = "TimeToHit";
 
