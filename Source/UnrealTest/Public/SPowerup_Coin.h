@@ -22,7 +22,7 @@ protected:
     UStaticMeshComponent* MeshComp;
 	
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Credits")
-    int CreditsToGrant;
+    int32 CreditsToGrant;
 
 public:
 

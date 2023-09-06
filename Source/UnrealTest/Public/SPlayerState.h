@@ -6,6 +6,10 @@
 #include "GameFramework/PlayerState.h"
 #include "SPlayerState.generated.h"
 
+//Looman
+// USeful to bind in gameplay
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnCreditsChanged, ASPlayerState*, PlayerState, int32, NewCredits, int32, Delta);
+
 /**
  * 
  */
@@ -19,16 +23,26 @@ protected:
     ASPlayerState();
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Credits")
-    float Credits;
+    int32 Credits;
 
 public:
 
     UFUNCTION(BlueprintCallable, Category = "Credits")
-    bool GrantCredits(const float NewCredits);
+    bool GrantCredits(const int32 NewCredits);
 
     UFUNCTION(BlueprintCallable, Category = "Credits")
-    bool DeductCredits(const float NewCredits);
+    bool DeductCredits(const int32 NewCredits);
 
     UFUNCTION(BlueprintCallable, Category = "Credits")
-    float GetCredits() const;
+    int32 GetCredits() const;
+
+    // Looman Implementation
+    UPROPERTY(BlueprintAssignable, Category = "Events")
+    FOnCreditsChanged OnCreditsChanged;
+
+    UFUNCTION(BlueprintCallable, Category = "Credits")
+    void AddCredits(int32 Delta);
+
+    UFUNCTION(BlueprintCallable, Category = "Credits")
+    bool RemoveCredits(int32 Delta);
 };

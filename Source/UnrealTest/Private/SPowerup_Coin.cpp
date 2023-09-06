@@ -24,6 +24,15 @@ void ASPowerup_Coin::Interact_Implementation(APawn* InstigatorPawn)
         return;
     }
 
+    // Looman implementation
+    if (ASPlayerState* PlayerState = InstigatorPawn->GetPlayerState<ASPlayerState>())
+    {
+        PlayerState->AddCredits(CreditsToGrant);
+        HideAndCooldownPowerup();
+    }
+
+    /*
+    My Own Implementation
     if(ASCharacter* Character = Cast<ASCharacter>(InstigatorPawn))
     {
         ASPlayerState* PlayerState = CastChecked<ASPlayerState>(Character->GetPlayerState());
@@ -34,4 +43,5 @@ void ASPowerup_Coin::Interact_Implementation(APawn* InstigatorPawn)
             HideAndCooldownPowerup();
         }
     }
+    */
 }

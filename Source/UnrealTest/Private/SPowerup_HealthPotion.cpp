@@ -14,6 +14,8 @@ ASPowerup_HealthPotion::ASPowerup_HealthPotion()
     // Disable collision, instead we will use SphereComp to handle interaction queries
     MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     MeshComp->SetupAttachment(RootComponent);
+
+    CostToUsePotion = 50;
 }
 
 void ASPowerup_HealthPotion::Interact_Implementation(APawn* InstigatorPawn)
@@ -23,6 +25,23 @@ void ASPowerup_HealthPotion::Interact_Implementation(APawn* InstigatorPawn)
         return;
     }
 
+    // Looman Implementation
+    USAttributeComponent* AttributeComp = USAttributeComponent::GetAttributes(InstigatorPawn);
+
+    if (ensure(AttributeComp) && !AttributeComp->IsFullHealth())
+    {
+        if (ASPlayerState* PS = InstigatorPawn->GetPlayerState<ASPlayerState>())
+        {
+            if (PS->RemoveCredits(CostToUsePotion) && AttributeComp->ApplyHealthChange(this, AttributeComp->GetHealthMax()))
+            {
+                // Only trigger if healed successfully
+                HideAndCooldownPowerup();
+            }
+        }
+    }
+
+    // Own Implementation
+    /*
     if (ASCharacter* Character = Cast<ASCharacter>(InstigatorPawn))
     {
         ASPlayerState* PlayerState = Cast<ASPlayerState>(Character->GetPlayerState());
@@ -50,4 +69,5 @@ void ASPowerup_HealthPotion::Interact_Implementation(APawn* InstigatorPawn)
             }
         }
     }
+    */
 }

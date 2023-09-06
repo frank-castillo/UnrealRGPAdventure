@@ -27,6 +27,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	UEnvQuery* SpawnBotQuery;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Pickup")
+	UEnvQuery* PowerupSpawnQuery;
+
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	UCurveFloat* DifficultyCurve;
 
@@ -38,14 +41,26 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Respawn")
     float RespawnDelay;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Credits")
-    uint8 AICreditValue;
+    UPROPERTY(EditDefaultsOnly, Category = "Pickup")
+    int32 DesiredPowerupCount;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Pickup")
+    float RequiredPowerupDistance;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Pickup")
+    TArray<TSubclassOf<AActor>> PowerupClasses;
+
+    UPROPERTY(EditDefaultsOnly, Category = "AI")
+    int32 AICreditValue;
 
 	UFUNCTION()
 	void SpawnBotTimerElapsed();
 
 	UFUNCTION()
-	void OnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance, EEnvQueryStatus::Type QueryStatus);
+	void OnBotSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance, EEnvQueryStatus::Type QueryStatus);
+
+    UFUNCTION()
+    void OnPowerupSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance, EEnvQueryStatus::Type QueryStatus);
 
     UFUNCTION()
     void RespawnPlayerElapsed(AController* Controller);

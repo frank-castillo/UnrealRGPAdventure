@@ -20,6 +20,10 @@ ASGameModeBase::ASGameModeBase()
     SpawnTimerInterval = 2.0f;
     RespawnDelay = 2.0f;
     AICreditValue = 10;
+    DesiredPowerupCount = 10;
+    RequiredPowerupDistance = 2000;
+
+    PlayerStateClass = ASPlayerState::StaticClass();
 }
 
 void ASGameModeBase::StartPlay()
@@ -29,6 +33,18 @@ void ASGameModeBase::StartPlay()
     // continuous timer to spawn in more bots
     // Actual amount of bots and whether it is allowed to spawn determined by spawn logic
     GetWorldTimerManager().SetTimer(TimerHandle_SpawnBots, this, &ASGameModeBase::SpawnBotTimerElapsed, SpawnTimerInterval, true);
+
+    // Spawn coin pickups
+    if (ensure(PowerupClasses.Num() > 0))
+    {
+        // Run EQS to find potential power-up spawn locations
+        UEnvQueryInstanceBlueprintWrapper* QueryInstance = UEnvQueryManager::RunEQSQuery(this, PowerupSpawnQuery, this, EEnvQueryRunMode::AllMatching, nullptr);
+
+        if (ensure(QueryInstance))
+        {
+            QueryInstance->GetOnQueryFinishedEvent().AddDynamic(this, &ASGameModeBase::OnPowerupSpawnQueryCompleted);
+        }
+    }
 }
 
 void ASGameModeBase::OnActorKilled(AActor* VictimActor, AActor* Killer)
@@ -50,12 +66,26 @@ void ASGameModeBase::OnActorKilled(AActor* VictimActor, AActor* Killer)
 
         UE_LOG(LogTemp, Log, TEXT("OnActorKilled: Victim: %s, Killer: %s"), *GetNameSafe(VictimActor), *GetNameSafe(Killer));
     }
-    else if (VictimActor->IsA<ASAICharacter>() && Killer->IsA<ASCharacter>())
+
+    // Looman Implementation
+    APawn* KillerPawn = Cast<APawn>(Killer);
+    if (KillerPawn)
+    {
+        ASPlayerState* PS = KillerPawn->GetPlayerState<ASPlayerState>();
+
+        if (PS)
+        {
+            PS->AddCredits(AICreditValue);
+        }
+    }
+
+    // Own implementation
+    /*else if (VictimActor->IsA<ASAICharacter>() && Killer->IsA<ASCharacter>())
     {
         Player = Cast<ASCharacter>(Killer);
         ASPlayerState* PlayerState = Cast<ASPlayerState>(Player->GetController()->PlayerState.Get());
         PlayerState->GrantCredits(AICreditValue);
-    }
+    }*/
 }
 
 void ASGameModeBase::KillAll()
@@ -119,11 +149,11 @@ void ASGameModeBase::SpawnBotTimerElapsed()
 
     if (ensure(QueryInstance))
     {
-        QueryInstance->GetOnQueryFinishedEvent().AddDynamic(this, &ASGameModeBase::OnQueryCompleted);
+        QueryInstance->GetOnQueryFinishedEvent().AddDynamic(this, &ASGameModeBase::OnBotSpawnQueryCompleted);
     }
 }
 
-void ASGameModeBase::OnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance, EEnvQueryStatus::Type QueryStatus)
+void ASGameModeBase::OnBotSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance, EEnvQueryStatus::Type QueryStatus)
 {
     if (QueryStatus != EEnvQueryStatus::Success)
     {
@@ -140,6 +170,67 @@ void ASGameModeBase::OnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryIn
         GetWorld()->SpawnActor<AActor>(MinionClass, Locations[0], FRotator::ZeroRotator);
 
         DrawDebugSphere(GetWorld(), Locations[0], 50.0f, 20, FColor::Blue, false, 60.0f);
+    }
+}
+
+void ASGameModeBase::OnPowerupSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance, EEnvQueryStatus::Type QueryStatus)
+{
+    if (QueryStatus != EEnvQueryStatus::Success)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Spawn bot EQS Query Failed!"));
+        return;
+    }
+
+    // Get possible locations to spawn the item - same as bots
+    TArray<FVector> Locations = QueryInstance->GetResultsAsLocations();
+
+    // Keep used locations to easily check distance between points
+    TArray<FVector> UsedLocations;
+
+    int32 SpawnCounter = 0;
+
+    // Break out if we reached the desired count or if we have no more potential positions remaining
+    while (SpawnCounter < DesiredPowerupCount && Locations.Num() > 0)
+    {
+        // Pick a random location from remaining points.
+        int32 RandomLocationIndex = FMath::RandRange(0, Locations.Num() - 1);
+
+        FVector PickedLocation = Locations[RandomLocationIndex];
+        // Remove to avoid picking again
+        Locations.RemoveAt(RandomLocationIndex);
+
+        // Check minimum distance requirement
+        bool bValidLocation = true;
+        for (FVector OtherLocation : UsedLocations)
+        {
+            float DistanceTo = (PickedLocation - OtherLocation).Size();
+
+            if (DistanceTo < RequiredPowerupDistance)
+            {
+                // Show skipped locations due to distance
+                //DrawDebugSphere(GetWorld(), PickedLocation, 50.0f, 20, FColor::Red, false, 10.0f);
+
+                // too close, skip to next attempt
+                bValidLocation = false;
+                break;
+            }
+        }
+
+        // Failed the distance test
+        if (!bValidLocation)
+        {
+            continue;
+        }
+
+        // Pick a random powerup-class
+        int32 RandomClassIndex = FMath::RandRange(0, PowerupClasses.Num() - 1);
+        TSubclassOf<AActor> RandomPowerupClass = PowerupClasses[RandomClassIndex];
+
+        GetWorld()->SpawnActor<AActor>(RandomPowerupClass, PickedLocation, FRotator::ZeroRotator);
+
+        // Keep for distance checks
+        UsedLocations.Add(PickedLocation);
+        SpawnCounter++;
     }
 }
 
