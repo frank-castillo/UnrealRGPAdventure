@@ -22,7 +22,7 @@ protected:
     UPROPERTY(VisibleAnywhere)
     UStaticMeshComponent* StaticMeshComp;
 
-    UPROPERTY(BlueprintReadOnly, EditAnywhere )
+    UPROPERTY(BlueprintReadOnly, EditAnywhere)
     URadialForceComponent* RadialForceComp;
 
     virtual void PostInitializeComponents() override;

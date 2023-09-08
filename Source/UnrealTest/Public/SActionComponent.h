@@ -20,7 +20,10 @@ public:
 
     // We wanna make sure we can register actions and its public so any object that has or needs an action, can register itself
     UFUNCTION(BlueprintCallable, Category = "Actions")
-    void AddAction(TSubclassOf<USAction> ActionClass);
+    void AddAction(AActor* Instigator, TSubclassOf<USAction> ActionClass);
+
+    UFUNCTION(BlueprintCallable, Category = "Actions")
+    void RemoveAction(USAction* ActionToRemove);
 
     UFUNCTION(BlueprintCallable, Category = "Actions")
     bool StartActionByName(AActor* Instigator, FName ActionName);
@@ -32,6 +35,9 @@ public:
     FGameplayTagContainer ActiveGameplayTags;
 
 protected:
+
+    UFUNCTION(Server, Reliable)
+    void ServerStartAction(AActor* Instigator, FName ActionName);
 
     UPROPERTY(EditAnywhere, Category = "Actions")
     TArray<TSubclassOf<USAction>> DefaultActions;

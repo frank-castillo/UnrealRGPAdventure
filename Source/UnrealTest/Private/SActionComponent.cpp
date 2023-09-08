@@ -7,10 +7,12 @@
 USActionComponent::USActionComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+
+    SetIsReplicatedByDefault(true);
 }
 
 
-void USActionComponent::AddAction(TSubclassOf<USAction> ActionClass)
+void USActionComponent::AddAction(AActor* Instigator, TSubclassOf<USAction> ActionClass)
 {
     if (!ensure(ActionClass))
     {
@@ -22,7 +24,22 @@ void USActionComponent::AddAction(TSubclassOf<USAction> ActionClass)
     if (ensure(NewAction))
     {
         Actions.Add(NewAction);
+
+        if (NewAction->bAutoStart && ensure(NewAction->CanStart(Instigator)))
+        {
+            NewAction->StartAction(Instigator);
+        }
     }
+}
+
+void USActionComponent::RemoveAction(USAction* ActionToRemove)
+{
+    if (!ensure(ActionToRemove && !ActionToRemove->IsRunning()))
+    {
+        return;
+    }
+
+    Actions.Remove(ActionToRemove);
 }
 
 bool USActionComponent::StartActionByName(AActor* Instigator, FName ActionName)
@@ -37,6 +54,13 @@ bool USActionComponent::StartActionByName(AActor* Instigator, FName ActionName)
                 GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FailedMsg);
                 // Check the other actions
                 continue;
+            }
+
+            // Is client?
+            // This sends the data to the server
+            if (!GetOwner()->HasAuthority())
+            {
+                ServerStartAction(Instigator, ActionName);
             }
 
             Action->StartAction(Instigator);
@@ -70,7 +94,7 @@ void USActionComponent::BeginPlay()
 
     for (TSubclassOf<USAction> ActionClass : DefaultActions)
     {
-        AddAction(ActionClass);
+        AddAction(GetOwner(), ActionClass);
     }
 }
 
@@ -81,4 +105,9 @@ void USActionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
     // GEngine is a global pointer to our engine, accessible from anywhere
     FString DebugMsg = GetNameSafe(GetOwner()) + " : " + ActiveGameplayTags.ToStringSimple(); // We use simple, as it has the least amount of markup language
     GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, DebugMsg);
+}
+
+void USActionComponent::ServerStartAction_Implementation(AActor* Instigator, FName ActionName)
+{
+    StartActionByName(Instigator, ActionName);
 }

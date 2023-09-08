@@ -7,6 +7,8 @@
 #include <GameplayTagContainer.h>
 #include "SMagicProjectile.generated.h"
 
+class USActionEffect;
+
 UCLASS()
 class UNREALTEST_API ASMagicProjectile : public ASProjectileBase // Refactor from base class
 {
@@ -31,4 +33,7 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, Category = "Damage")
     FGameplayTag ParryTag;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Damage")
+    TSubclassOf<USActionEffect> BurningActionClass;
 };

@@ -14,11 +14,11 @@ class UNREALTEST_API ASItemChest : public AActor, public ISGameplayInterface
 {
 	GENERATED_BODY()
 
-    void Interact_Implementation(APawn* InstigatorPawn) override;
-
-public:	
+public:
 	// Sets default values for this actor's properties
 	ASItemChest();
+
+    void Interact_Implementation(APawn* InstigatorPawn);
 
     UPROPERTY(EditAnywhere)
     double TargetPitch;
@@ -30,4 +30,10 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     UStaticMeshComponent* LidMesh;
+
+    UPROPERTY(ReplicatedUsing = "OnRep_LidOpened", BlueprintReadOnly) // RepNotify
+    bool bLidOpened;
+
+    UFUNCTION()
+    void OnRep_LidOpened();
 };

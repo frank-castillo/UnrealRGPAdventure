@@ -177,7 +177,7 @@ void ASGameModeBase::OnPowerupSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrap
 {
     if (QueryStatus != EEnvQueryStatus::Success)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Spawn bot EQS Query Failed!"));
+        UE_LOG(LogTemp, Warning, TEXT("Spawn powerup Query Failed!"));
         return;
     }
 
@@ -208,7 +208,7 @@ void ASGameModeBase::OnPowerupSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrap
             if (DistanceTo < RequiredPowerupDistance)
             {
                 // Show skipped locations due to distance
-                //DrawDebugSphere(GetWorld(), PickedLocation, 50.0f, 20, FColor::Red, false, 10.0f);
+                DrawDebugSphere(GetWorld(), PickedLocation, 50.0f, 20, FColor::Red, false, 10.0f);
 
                 // too close, skip to next attempt
                 bValidLocation = false;

@@ -40,13 +40,23 @@ protected:
 	// --
 	// Category = "" - display only for detail panels and blueprint context menu
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Replicated, Category = "Attributes")
 	float Health;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Replicated, Category = "Attributes")
 	float HealthMax;
 
 	// HealthMax, Stamina, Strength
+
+    // Because this is more a cosmetic change we don't need full response, however it is marked as Reliable because of our dead logic being inside this method
+    // Specially because Health is already marked as replicated so we already get the updated value anytime it changes
+    // @FIXME: Mark as unreliable once we move the state out of SCharacter into its own component
+    UFUNCTION(NetMulticast, Reliable)
+    void MulticastHealthChanged(AActor* InstigatorActor, float NewHealth, float Delta);
+
+    // Possible Fix
+    /*UPROPERTY(ReplicatedUsing="")
+    bool bIsAlive;*/
 
 public:
 

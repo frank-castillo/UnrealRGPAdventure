@@ -36,6 +36,9 @@ ASProjectileBase::ASProjectileBase()
 
     ImpactShakeInnerRadius = 250.0f;
     ImpactShakeOuterRadius = 2500.0f;
+
+    // AI needs it to replicate
+    bReplicates = true;
 }
 
 void ASProjectileBase::OnActorHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)

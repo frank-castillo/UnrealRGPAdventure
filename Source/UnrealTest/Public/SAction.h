@@ -38,6 +38,9 @@ public:
     UPROPERTY(EditDefaultsOnly, Category = "Action")
     FName ActionName;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Action")
+    bool bAutoStart;
+
     UWorld* GetWorld() const override;
 
 protected:
