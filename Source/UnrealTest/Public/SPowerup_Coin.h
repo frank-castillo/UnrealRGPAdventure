@@ -6,8 +6,6 @@
 #include "SPowerupActor.h"
 #include "SPowerup_Coin.generated.h"
 
-class UStaticMeshComponent;
-
 /**
  * 
  */
@@ -17,9 +15,6 @@ class UNREALTEST_API ASPowerup_Coin : public ASPowerupActor
 	GENERATED_BODY()
 
 protected:
-
-    UPROPERTY(VisibleAnywhere, Category = "Components")
-    UStaticMeshComponent* MeshComp;
 	
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Credits")
     int32 CreditsToGrant;

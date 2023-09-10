@@ -25,15 +25,33 @@ protected:
 
 	virtual void PostInitializeComponents() override;
 
+    UFUNCTION(BlueprintCallable, Category = "AI")
     void SetTargetActor(AActor* NewTarget);
+
+    UFUNCTION(BlueprintCallable, Category = "AI")
+    AActor* GetTargetActor() const;
+
+    UFUNCTION()
+	void OnPawnSeen(APawn* Pawn);
+
+    UFUNCTION()
+    void OnHealthChanged(AActor* InstigatorActor, USAttributeComponent* OwningComp, float NewHealth, float Delta);
 
     UPROPERTY(VisibleAnywhere, Category = "Effect")
     FName TimeToHitParamName;
+
+    /* Key for AI Blackboard 'TargetActor' */
+    UPROPERTY(VisibleAnywhere, Category = "Effect")
+    FName TargetActorKey;
 
     USWorldUserWidget* ActiveHealthBar;
 
     UPROPERTY(EditDefaultsOnly, Category = "UI")
     TSubclassOf<UUserWidget> HealthBarWidgetClass;
+
+    /* Widget to display when bot first sees a player. */
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<UUserWidget> SpottedWidgetClass;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UPawnSensingComponent* PawnSensingComp;
@@ -43,10 +61,4 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     USActionComponent* ActionComp;
-
-	UFUNCTION()
-	void OnPawnSeen(APawn* Pawn);
-
-    UFUNCTION()
-    void OnHealthChanged(AActor* InstigatorActor, USAttributeComponent* OwningComp, float NewHealth, float Delta);
 };

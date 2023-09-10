@@ -3,6 +3,9 @@
 
 #include "SActionComponent.h"
 #include "SAction.h"
+#include "../UnrealTest.h"
+#include <Net/UnrealNetwork.h>
+#include <Engine/ActorChannel.h>
 
 USActionComponent::USActionComponent()
 {
@@ -11,7 +14,6 @@ USActionComponent::USActionComponent()
     SetIsReplicatedByDefault(true);
 }
 
-
 void USActionComponent::AddAction(AActor* Instigator, TSubclassOf<USAction> ActionClass)
 {
     if (!ensure(ActionClass))
@@ -19,10 +21,14 @@ void USActionComponent::AddAction(AActor* Instigator, TSubclassOf<USAction> Acti
         return;
     }
 
-    USAction* NewAction = NewObject<USAction>(this, ActionClass);
+    // Unreal Engine 4.27 implementation
+    //USAction* NewAction = NewObject<USAction>(GetOwner(), ActionClass);
 
+    // Unreal Engine 5.0+ implementation
+    USAction* NewAction = NewObject<USAction>(this, ActionClass);
     if (ensure(NewAction))
     {
+        NewAction->Initialize(this); // Fix the network discrepancy between server and client
         Actions.Add(NewAction);
 
         if (NewAction->bAutoStart && ensure(NewAction->CanStart(Instigator)))
@@ -56,8 +62,9 @@ bool USActionComponent::StartActionByName(AActor* Instigator, FName ActionName)
                 continue;
             }
 
-            // Is client?
-            // This sends the data to the server
+            // Is this a client?
+            // IF SO, this sends the data to the server to trigger the action for both the server and client
+            // The server gets triggered by this ServerStartAction function, while the client gets triggered on the call after the if statement
             if (!GetOwner()->HasAuthority())
             {
                 ServerStartAction(Instigator, ActionName);
@@ -88,13 +95,30 @@ bool USActionComponent::StopActionByName(AActor* Instigator, FName ActionName)
     return false;
 }
 
+USAction* USActionComponent::GetAction(TSubclassOf<USAction> ActionClass) const
+{
+    for (USAction* Action : Actions)
+    {
+        if (Action && Action->IsA(ActionClass))
+        {
+            return Action;
+        }
+    }
+
+    return nullptr;
+}
+
 void USActionComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-    for (TSubclassOf<USAction> ActionClass : DefaultActions)
+    // Server ONLY! -> without replication, only the server has actions...
+    if (GetOwner()->HasAuthority())
     {
-        AddAction(GetOwner(), ActionClass);
+        for (TSubclassOf<USAction> ActionClass : DefaultActions)
+        {
+            AddAction(GetOwner(), ActionClass);
+        }
     }
 }
 
@@ -103,11 +127,58 @@ void USActionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
     // GEngine is a global pointer to our engine, accessible from anywhere
-    FString DebugMsg = GetNameSafe(GetOwner()) + " : " + ActiveGameplayTags.ToStringSimple(); // We use simple, as it has the least amount of markup language
-    GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, DebugMsg);
+    //FString DebugMsg = GetNameSafe(GetOwner()) + " : " + ActiveGameplayTags.ToStringSimple(); // We use simple, as it has the least amount of markup language
+    //GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, DebugMsg);
+
+    // Draw all actions
+    for (USAction* Action : Actions)
+    {
+        FColor TextColor = Action->IsRunning() ? FColor::Blue : FColor::White;
+
+        // Unreal Engine 4.27
+        /*FString ActionMsg = FString::Printf(TEXT("[%s] Action: %s : IsRunning: %s : Outer: %s"),
+            *GetNameSafe(GetOwner()),
+            *Action->ActionName.ToString(),
+            Action->IsRunning() ? TEXT("true") : TEXT("false"),
+            *GetNameSafe(Action->GetOuter()));*/
+
+        // Unreal Engine 5.0+
+        FString ActionMsg = FString::Printf(TEXT("[%s] Action: %s : IsRunning: %s : Outer: %s"),
+            *GetNameSafe(GetOwner()),
+            *Action->ActionName.ToString(),
+            Action->IsRunning() ? TEXT("true") : TEXT("false"),
+            *GetNameSafe(GetOuter()));
+
+        LogOnScreen(this, ActionMsg, TextColor, 0.0f);
+    }
 }
+
+// Network
 
 void USActionComponent::ServerStartAction_Implementation(AActor* Instigator, FName ActionName)
 {
     StartActionByName(Instigator, ActionName);
+}
+
+void USActionComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(USActionComponent, Actions);
+}
+
+bool USActionComponent::ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags)
+{
+    bool WroteSomething = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
+
+    for (USAction* Action : Actions)
+    {
+        if (Action)
+        {
+            // Bitwise or should increase performance in this section
+            WroteSomething |= Channel->ReplicateSubobject(Action, *Bunch, *RepFlags);
+        }
+    }
+
+    return WroteSomething;
 }

@@ -43,6 +43,10 @@ public:
 
     UWorld* GetWorld() const override;
 
+    bool IsSupportedForNetworking() const override { return true; }
+
+    void Initialize(USActionComponent* NewActionComp);
+
 protected:
 
     UFUNCTION(BlueprintCallable, Category = "Action")
@@ -56,5 +60,14 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Tags")
     FGameplayTagContainer BlockedTags;
 
+    // Has to be marked as replicated so the system won't crash
+    UPROPERTY(Replicated)
+    USActionComponent* ActionComp;
+
+    UPROPERTY(ReplicatedUsing= "OnRep_IsRunning")
     bool bIsRunning;
+    
+    // Network
+    UFUNCTION()
+    void OnRep_IsRunning();
 };

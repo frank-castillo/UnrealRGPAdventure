@@ -6,17 +6,12 @@
 #include "SPowerupActor.h"
 #include "SPowerup_HealthPotion.generated.h"
 
-class UStaticMeshComponent;
-
 UCLASS()
 class UNREALTEST_API ASPowerup_HealthPotion : public ASPowerupActor
 {
 	GENERATED_BODY()
 	
 protected:
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* MeshComp;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Credits")
 	int CostToUsePotion;

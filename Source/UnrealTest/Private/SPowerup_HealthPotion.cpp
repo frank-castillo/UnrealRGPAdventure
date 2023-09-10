@@ -9,12 +9,6 @@
 // Sets default values
 ASPowerup_HealthPotion::ASPowerup_HealthPotion()
 {
-    MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
-    
-    // Disable collision, instead we will use SphereComp to handle interaction queries
-    MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    MeshComp->SetupAttachment(RootComponent);
-
     CostToUsePotion = 50;
 }
 

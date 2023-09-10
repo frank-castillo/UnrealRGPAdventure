@@ -12,6 +12,9 @@ USAttributeComponent::USAttributeComponent()
 	HealthMax = 100.0f;
 	Health = HealthMax;
 
+    RageMax = 100.0f;
+    Rage = 0.0f;
+
     SetIsReplicatedByDefault(true);
 }
 
@@ -105,6 +108,37 @@ bool USAttributeComponent::ApplyHealthChange(AActor* InstigatorActor, float Delt
 	return ActualDelta != 0;
 }
 
+float USAttributeComponent::GetRage() const
+{
+    return Rage;
+}
+
+bool USAttributeComponent::ApplyRage(AActor* InstigatorActor, float Delta)
+{
+    if (!GetOwner()->CanBeDamaged() && Delta < 0.0f)
+    {
+        return false;
+    }
+
+    if (Delta < 0.0f)
+    {
+        float DamageMultiplier = CVarDamageMultiplier.GetValueOnGameThread();
+
+        Delta *= DamageMultiplier;
+    }
+
+    float OldRage = Rage;
+    Rage = FMath::Clamp(Rage + Delta, 0.0f, RageMax);
+    float ActualDelta = Rage - OldRage;
+
+    if (ActualDelta != 0.0f)
+    {
+        MulticastRageChanged(InstigatorActor, Rage, ActualDelta);
+    }
+
+    return ActualDelta != 0;
+}
+
 // Network code
 
 void USAttributeComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -121,4 +155,9 @@ void USAttributeComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 void USAttributeComponent::MulticastHealthChanged_Implementation(AActor* InstigatorActor, float NewHealth, float Delta)
 {
     OnHealthChanged.Broadcast(InstigatorActor, this, NewHealth, Delta);
+}
+
+void USAttributeComponent::MulticastRageChanged_Implementation(AActor* InstigatorActor, float NewRage, float Delta)
+{
+    OnRageChanged.Broadcast(InstigatorActor, this, NewRage, Delta);
 }

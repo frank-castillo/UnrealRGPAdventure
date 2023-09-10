@@ -22,10 +22,15 @@ ASAICharacter::ASAICharacter()
     ActionComp = CreateDefaultSubobject<USActionComponent>(TEXT("ActionComp"));
 
     TimeToHitParamName = "TimeToHit";
+    TargetActorKey = "TargetActor";
 
+    // Disabled on capsule to let projectiles pass through capsule and hit mesh instead
     GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Ignore);
+
+    // Enabled on mesh to react to incoming projectiles
     GetMesh()->SetGenerateOverlapEvents(true);
 
+    // Ensures we receive a controlled when spawned in the level by our gamemode
     AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 }
 
@@ -43,14 +48,40 @@ void ASAICharacter::SetTargetActor(AActor* NewTarget)
 
     if (ensure(AIC))
     {
-        AIC->GetBlackboardComponent()->SetValueAsObject("TargetActor", NewTarget);
+        AIC->GetBlackboardComponent()->SetValueAsObject(TargetActorKey, NewTarget);
     }
+}
+
+AActor* ASAICharacter::GetTargetActor() const
+{
+    AAIController* AIC = Cast<AAIController>(GetController());
+
+    if (ensure(AIC))
+    {
+        return Cast<AActor>(AIC->GetBlackboardComponent()->GetValueAsObject(TargetActorKey));
+    }
+
+    return nullptr;
 }
 
 void ASAICharacter::OnPawnSeen(APawn* Pawn)
 {
-    SetTargetActor(Pawn);
-    DrawDebugString(GetWorld(), GetActorLocation(), "PLAYER SPOTTED", nullptr, FColor::White, 4.0f, true);
+    if (GetTargetActor() != Pawn)
+    {
+        SetTargetActor(Pawn);
+
+        USWorldUserWidget* NewWidget = CreateWidget<USWorldUserWidget>(GetWorld(), SpottedWidgetClass);
+        
+        if (NewWidget)
+        {
+            NewWidget->AttachedActor = this;
+
+            // Index of 10 (or anything higher than default of 0) places this on top of any other widget.
+            // May end up behind the minion health bar otherwise.
+            NewWidget->AddToViewport(10);
+        }
+    }
+    //DrawDebugString(GetWorld(), GetActorLocation(), "PLAYER SPOTTED", nullptr, FColor::White, 4.0f, true);
 }
 
 void ASAICharacter::OnHealthChanged(AActor* InstigatorActor, USAttributeComponent* OwningComp, float NewHealth, float Delta)

@@ -31,6 +31,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Actions")
     bool StopActionByName(AActor* Instigator, FName ActionName);
 
+    UFUNCTION(BlueprintCallable, Category = "Actions")
+    USAction* GetAction(TSubclassOf<USAction> ActionClass) const;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tags")
     FGameplayTagContainer ActiveGameplayTags;
 
@@ -43,13 +46,17 @@ protected:
     TArray<TSubclassOf<USAction>> DefaultActions;
 
     // Marked as UPROPERTY so we tell Unreal there is memory it should keep track of
-    UPROPERTY()
+    // Marked as replicated so we can port this to the network
+    UPROPERTY(Replicated)
     TArray<USAction*> Actions;
 
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
 public:	
+
+    bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
+
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 };

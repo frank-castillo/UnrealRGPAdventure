@@ -8,12 +8,6 @@
 
 ASPowerup_Coin::ASPowerup_Coin()
 {
-    MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
-
-    // Disable collision, instead we will use SphereComp to handle interaction queries
-    MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    MeshComp->SetupAttachment(RootComponent);
-
     CreditsToGrant = 5;
 }
 

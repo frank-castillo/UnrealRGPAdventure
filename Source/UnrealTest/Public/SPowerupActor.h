@@ -8,6 +8,7 @@
 #include "SPowerupActor.generated.h"
 
 class USphereComponent;
+class UStaticMeshComponent;
 
 UCLASS()
 class UNREALTEST_API ASPowerupActor : public AActor, public ISGameplayInterface
@@ -28,6 +29,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USphereComponent* SphereComp;
+
+    UPROPERTY(VisibleAnywhere, Category = "Components")
+	UStaticMeshComponent* MeshComp;
 
 public:
 
