@@ -79,13 +79,19 @@ void USAction_ProjectileAttack::StartAction_Implementation(AActor* Instigator)
     {
         // Play animation, spawn attached particle effect, set timer
         Character->PlayAnimMontage(AttackAnim);
+
+        // Spawn hand particles for additional feedback
         UGameplayStatics::SpawnEmitterAttached(CastingEffect, Character->GetMesh(), HandSocketName, FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::SnapToTarget);
 
-        FTimerHandle TimerHandle_AttackDelay;
-        FTimerDelegate Delegate;
-        Delegate.BindUFunction(this, "AttackDelay_Elapsed", Character);
+        // Is Server?
+        if (Character->HasAuthority())
+        {
+            FTimerHandle TimerHandle_AttackDelay;
+            FTimerDelegate Delegate;
+            Delegate.BindUFunction(this, "AttackDelay_Elapsed", Character);
 
-        // This will call the function with the Character as the parameter being passed into the function
-        GetWorld()->GetTimerManager().SetTimer(TimerHandle_AttackDelay, Delegate, AttackAnimDelay, false);
+            // This will call the function with the Character as the parameter being passed into the function
+            GetWorld()->GetTimerManager().SetTimer(TimerHandle_AttackDelay, Delegate, AttackAnimDelay, false);
+        }
     }
 }

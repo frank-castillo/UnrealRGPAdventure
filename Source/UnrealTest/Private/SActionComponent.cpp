@@ -9,7 +9,7 @@
 
 USActionComponent::USActionComponent()
 {
-	PrimaryComponentTick.bCanEverTick = true;
+    PrimaryComponentTick.bCanEverTick = true;
 
     SetIsReplicatedByDefault(true);
 }
@@ -18,6 +18,13 @@ void USActionComponent::AddAction(AActor* Instigator, TSubclassOf<USAction> Acti
 {
     if (!ensure(ActionClass))
     {
+        return;
+    }
+
+    // Skip for clients
+    if (!GetOwner()->HasAuthority())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Client attempting to AddAction! [Class: %s]"), *GetNameSafe(ActionClass));
         return;
     }
 
@@ -86,6 +93,14 @@ bool USActionComponent::StopActionByName(AActor* Instigator, FName ActionName)
         {
             if (Action->IsRunning())
             {
+                // Is this a client?
+                // IF SO, this sends the data to the server to trigger the action for both the server and client
+                // The server gets triggered by this ServerStartAction function, while the client gets triggered on the call after the if statement
+                if (!GetOwner()->HasAuthority())
+                {
+                    ServerStopAction(Instigator, ActionName);
+                }
+
                 Action->StopAction(Instigator);
                 return true;
             }
@@ -110,7 +125,7 @@ USAction* USActionComponent::GetAction(TSubclassOf<USAction> ActionClass) const
 
 void USActionComponent::BeginPlay()
 {
-	Super::BeginPlay();
+    Super::BeginPlay();
 
     // Server ONLY! -> without replication, only the server has actions...
     if (GetOwner()->HasAuthority())
@@ -124,7 +139,7 @@ void USActionComponent::BeginPlay()
 
 void USActionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
     // GEngine is a global pointer to our engine, accessible from anywhere
     //FString DebugMsg = GetNameSafe(GetOwner()) + " : " + ActiveGameplayTags.ToStringSimple(); // We use simple, as it has the least amount of markup language
@@ -142,12 +157,15 @@ void USActionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
             Action->IsRunning() ? TEXT("true") : TEXT("false"),
             *GetNameSafe(Action->GetOuter()));*/
 
-        // Unreal Engine 5.0+
-        FString ActionMsg = FString::Printf(TEXT("[%s] Action: %s : IsRunning: %s : Outer: %s"),
-            *GetNameSafe(GetOwner()),
-            *Action->ActionName.ToString(),
-            Action->IsRunning() ? TEXT("true") : TEXT("false"),
-            *GetNameSafe(GetOuter()));
+            // Unreal Engine 5.0+
+            /*FString ActionMsg = FString::Printf(TEXT("[%s] Action: %s : IsRunning: %s : Outer: %s"),
+                *GetNameSafe(GetOwner()),
+                *Action->ActionName.ToString(),
+                Action->IsRunning() ? TEXT("true") : TEXT("false"),
+                *GetNameSafe(GetOuter()));*/
+
+                // Less intrusive Debug
+        FString ActionMsg = FString::Printf(TEXT("[%s] Action: %s : IsRunning: %s"), *GetNameSafe(GetOwner()), *GetNameSafe(Action));
 
         LogOnScreen(this, ActionMsg, TextColor, 0.0f);
     }
@@ -158,6 +176,11 @@ void USActionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 void USActionComponent::ServerStartAction_Implementation(AActor* Instigator, FName ActionName)
 {
     StartActionByName(Instigator, ActionName);
+}
+
+void USActionComponent::ServerStopAction_Implementation(AActor* Instigator, FName ActionName)
+{
+    StopActionByName(Instigator, ActionName);
 }
 
 void USActionComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

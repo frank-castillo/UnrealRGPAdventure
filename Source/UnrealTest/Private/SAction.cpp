@@ -33,20 +33,21 @@ bool USAction::CanStart_Implementation(AActor* Instigator)
 
 void USAction::StartAction_Implementation(AActor* Instigator)
 {
-    //UE_LOG(LogTemp, Log, TEXT("Running: %s"), *GetNameSafe(this));
-    LogOnScreen(this, FString::Printf(TEXT("Started: %s"), *ActionName.ToString()), FColor::Green);
+    UE_LOG(LogTemp, Log, TEXT("Running: %s"), *GetNameSafe(this));
+    //LogOnScreen(this, FString::Printf(TEXT("Started: %s"), *ActionName.ToString()), FColor::Green);
 
     // We need to use the outer so we have the actual ActionComponent the action belongs to
     USActionComponent* Comp = GetOwningComponent();
     Comp->ActiveGameplayTags.AppendTags(GrantsTags);
 
-    bIsRunning = true;
+    RepData.bIsRunning = true;
+    RepData.Instigator = Instigator;
 }
 
 void USAction::StopAction_Implementation(AActor* Instigator)
 {
-    //UE_LOG(LogTemp, Log, TEXT("Stopped: %s"), *GetNameSafe(this));
-    LogOnScreen(this, FString::Printf(TEXT("Stopped: %s"), *ActionName.ToString()), FColor::White);
+    UE_LOG(LogTemp, Log, TEXT("Stopped: %s"), *GetNameSafe(this));
+    //LogOnScreen(this, FString::Printf(TEXT("Stopped: %s"), *ActionName.ToString()), FColor::White);
 
     // Safety check to ensure we can test proper bugs and see if we made a mistake on the logic when this should not be triggering at all
     // Removed as it would only work on the server
@@ -55,12 +56,13 @@ void USAction::StopAction_Implementation(AActor* Instigator)
     USActionComponent* Comp = GetOwningComponent();
     Comp->ActiveGameplayTags.RemoveTags(GrantsTags);
 
-    bIsRunning = false;
+    RepData.bIsRunning = false;
+    RepData.Instigator = Instigator;
 }
 
 bool USAction::IsRunning() const
 {
-    return bIsRunning;
+    return RepData.bIsRunning;
 }
 
 UWorld* USAction::GetWorld() const
@@ -101,15 +103,15 @@ USActionComponent* USAction::GetOwningComponent() const
 }
 
 // Triggered when bIsRunning gets updated on the network, allowing to play this on Server and Clients
-void USAction::OnRep_IsRunning()
+void USAction::OnRep_RepData()
 {
-    if (bIsRunning)
+    if (RepData.bIsRunning)
     {
-        StartAction(nullptr);
+        StartAction(RepData.Instigator);
     }
     else
     {
-        StopAction(nullptr);
+        StopAction(RepData.Instigator);
     }
 }
 
@@ -117,6 +119,6 @@ void USAction::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLi
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-    DOREPLIFETIME(USAction, bIsRunning);
+    DOREPLIFETIME(USAction, RepData);
     DOREPLIFETIME(USAction, ActionComp);
 }

@@ -81,29 +81,39 @@ bool USAttributeComponent::ApplyHealthChange(AActor* InstigatorActor, float Delt
     }
 
 	float OldHealth = Health;
-	Health = FMath::Clamp(Health + Delta, 0.0f, HealthMax);
-	float ActualDelta = Health - OldHealth;
+    float NewHealth = FMath::Clamp(Health + Delta, 0.0f, HealthMax);
+    float ActualDelta = NewHealth - OldHealth;
 
-	//OnHealthChanged.Broadcast(InstigatorActor, this, Health, ActualDelta);
-
-    // This method ensures we call it on the server as well as on the clients
-    // When ran on clients, it will call the method upon itself, and that is it. No other server calls.
-
-    if (ActualDelta != 0.0f)
+    // Is Server?
+    if (GetOwner()->HasAuthority())
     {
-        MulticastHealthChanged(InstigatorActor, Health, ActualDelta);
-    }
+        // We only change the health if we have authority
+        Health = NewHealth;
 
-    if (ActualDelta < 0.0f && Health == 0.0f)
-    {
-        // Auth stands for Authority -> This is used for Multiplayer games, where the only one that can access the game mode is the authority (server)
-        ASGameModeBase* GM = GetWorld()->GetAuthGameMode<ASGameModeBase>();
-
-        if (GM)
+        // This method ensures we call it on the server as well as on the clients
+        // When ran on clients, it will call the method upon itself, and that is it. No other server calls.
+        if (ActualDelta != 0.0f)
         {
-            GM->OnActorKilled(GetOwner(), InstigatorActor);
+            MulticastHealthChanged(InstigatorActor, Health, ActualDelta);
+        }
+
+        // GameModes only exist on servers, never on clients, so there is no point on checking the gamemode logic on clients as it is useless
+
+        // Died
+        if (ActualDelta < 0.0f && Health == 0.0f)
+        {
+            // Auth stands for Authority -> This is used for Multiplayer games, where the only one that can access the game mode is the authority (server)
+            ASGameModeBase* GM = GetWorld()->GetAuthGameMode<ASGameModeBase>();
+
+            if (GM)
+            {
+                GM->OnActorKilled(GetOwner(), InstigatorActor);
+            }
         }
     }
+	
+    // Single client method call
+	//OnHealthChanged.Broadcast(InstigatorActor, this, Health, ActualDelta);
 
 	return ActualDelta != 0;
 }

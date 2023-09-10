@@ -53,7 +53,8 @@ void ASMagicProjectile::OnActorOverlap(UPrimitiveComponent* OverlappedComponent,
         {
             Explode();
 
-            if (ActionComp)
+            // Is Server? Then you are allowed to AddActions
+            if (ActionComp && HasAuthority())
             {
                 ActionComp->AddAction(GetInstigator(), BurningActionClass);
             }
