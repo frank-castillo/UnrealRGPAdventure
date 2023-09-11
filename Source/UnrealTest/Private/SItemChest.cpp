@@ -20,6 +20,11 @@ ASItemChest::ASItemChest()
     bReplicates = true;
 }
 
+void ASItemChest::OnActorLoaded_Implementation()
+{
+    OnRep_LidOpened(); // So we can update on server and client
+}
+
 void ASItemChest::Interact_Implementation(APawn* InstigatorPawn)
 {
     bLidOpened = !bLidOpened;

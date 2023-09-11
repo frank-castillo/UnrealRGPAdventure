@@ -34,6 +34,9 @@ protected:
     UFUNCTION()
 	void OnPawnSeen(APawn* Pawn);
 
+    UFUNCTION(NetMulticast, Unreliable, Category = "UI")
+    void MulticastPawnSeen();
+
     UFUNCTION()
     void OnHealthChanged(AActor* InstigatorActor, USAttributeComponent* OwningComp, float NewHealth, float Delta);
 

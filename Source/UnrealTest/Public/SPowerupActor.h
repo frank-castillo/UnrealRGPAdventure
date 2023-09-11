@@ -17,9 +17,6 @@ class UNREALTEST_API ASPowerupActor : public AActor, public ISGameplayInterface
 
 protected:
 
-	UPROPERTY(EditAnywhere, Category = "Powerup")
-	float RespawnTime;
-
 	UFUNCTION()
 	void ShowPowerup();
 
@@ -32,6 +29,17 @@ protected:
 
     UPROPERTY(VisibleAnywhere, Category = "Components")
 	UStaticMeshComponent* MeshComp;
+
+    UPROPERTY(EditAnywhere, Category = "Powerup")
+	float RespawnTime;
+
+    FTimerHandle TimerHandle_RespawnTimer;
+
+    UPROPERTY(ReplicatedUsing="OnRep_IsActive")
+    bool bIsActive;
+
+    UFUNCTION()
+    void OnRep_IsActive();
 
 public:
 

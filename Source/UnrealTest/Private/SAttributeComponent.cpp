@@ -157,6 +157,8 @@ void USAttributeComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
     DOREPLIFETIME(USAttributeComponent, Health);
     DOREPLIFETIME(USAttributeComponent, HealthMax);
+    DOREPLIFETIME(USAttributeComponent, Rage);
+    DOREPLIFETIME(USAttributeComponent, RageMax);
 
     // This is mostly used for optimization
     //DOREPLIFETIME_CONDITION(USAttributeComponent, HealthMax, COND_InitialOnly)

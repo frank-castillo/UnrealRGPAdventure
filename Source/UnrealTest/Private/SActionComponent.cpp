@@ -165,7 +165,7 @@ void USActionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
                 *GetNameSafe(GetOuter()));*/
 
                 // Less intrusive Debug
-        FString ActionMsg = FString::Printf(TEXT("[%s] Action: %s : IsRunning: %s"), *GetNameSafe(GetOwner()), *GetNameSafe(Action));
+        FString ActionMsg = FString::Printf(TEXT("[%s] Action: %s"), *GetNameSafe(GetOwner()), *GetNameSafe(Action));
 
         LogOnScreen(this, ActionMsg, TextColor, 0.0f);
     }

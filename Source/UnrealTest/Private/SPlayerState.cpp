@@ -2,6 +2,8 @@
 
 
 #include "SPlayerState.h"
+#include "SSaveGame.h"
+#include <Net/UnrealNetwork.h>
 
 ASPlayerState::ASPlayerState()
 {
@@ -77,4 +79,37 @@ bool ASPlayerState::RemoveCredits(int32 Delta)
     Credits -= Delta;
     OnCreditsChanged.Broadcast(this, Credits, Delta);
     return true;
+}
+
+void ASPlayerState::SavePlayerState_Implementation(USSaveGame* SaveObject)
+{
+    if (SaveObject)
+    {
+        SaveObject->Credits = Credits;
+    }
+}
+
+void ASPlayerState::LoadPlayerState_Implementation(USSaveGame* SaveObject)
+{
+    if (SaveObject)
+    {
+        //Credits = SaveObject->Credits;
+
+        // This implementation is preferred as it will properly trigger the event and any other underlying methods associated with this broadcast
+        // Like properly updating Server
+        AddCredits(SaveObject->Credits);
+    }
+}
+
+void ASPlayerState::OnRep_Credits(int32 OldCredits)
+{
+    // We just pass Delta directly this way
+    OnCreditsChanged.Broadcast(this, Credits, Credits - OldCredits);
+}
+
+void ASPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(ASPlayerState, Credits);
 }
