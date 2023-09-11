@@ -373,4 +373,6 @@ void ASGameModeBase::HandleStartingNewPlayer_Implementation(APlayerController* N
     }
 
     Super::HandleStartingNewPlayer_Implementation(NewPlayer); // This function calls our BeginPlayingState in our Custom controller
+
+    // We load our data as early as possible to avoid delaying the game or variables and widgets not being properly initialized
 }
